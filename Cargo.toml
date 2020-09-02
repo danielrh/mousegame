@@ -9,7 +9,7 @@ license = "MIT"
 authors = [ "Ander Horn <danielrh@gmail.com>"]
 keywords = ["SDL", "windowing", "graphics", "api", "engine"]
 categories = ["rendering","api-bindings","game-engines","multimedia"]
-
+autobins = false
 [[bin]]
 name="mouse"
 

@@ -30,31 +30,6 @@ impl Transform {
        ftransform(self, (self.midx * 2., 0.)),
        ]
   }
-  fn to_string(&self) -> Result<String, serde_xml_rs::Error> {
-    let mut components = [String::new(),String::new(),String::new(),String::new(),String::new()];
-    let mut num_components = 0usize;
-    if self.scale != 1.0 {
-      components[num_components] = format!("scale({})", self.scale);
-      num_components += 1;
-    }
-    if self.tx != 0.0 || self.ty != 0.0 {
-      components[num_components] = format!("translate({}, {})", self.tx, self.ty);
-      num_components += 1;      
-    }
-    if self.midx != 0.0 || self.midy != 0.0 {
-      components[num_components] = format!("translate({}, {})", self.midy, self.midy);
-      num_components += 1;      
-    }
-    if self.rotate != 0.0 {
-      components[num_components] = format!("rotate({})", self.rotate);
-      num_components += 1;
-    }
-    if self.midx != 0.0 || self.midy != 0.0 {
-      components[num_components] = format!("translate({}, {})", -self.midx, -self.midy);
-      num_components += 1;      
-    }
-    return Ok(components[..num_components].join(" "))
-  }
 }
 pub type F64Point = (f64, f64);
 
