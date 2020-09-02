@@ -52,10 +52,8 @@ struct CursorTransform {
 pub struct SceneState{
     cursor_transform: CursorTransform,
     duration_per_frame: time::Duration, // how long to wait while key is held down
-    cursor: Cursor,
     window_width: u32,
     window_height: u32,
-    color: Color,
 }
 
 impl SceneState {
@@ -63,7 +61,6 @@ impl SceneState {
         canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
         canvas.clear();
         canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
-        images.default_cursor.texture.set_color_mod(self.color.r,self.color.g,self.color.b);
         canvas.copy_ex(
             &images.default_cursor.texture,
             None,
@@ -165,7 +162,7 @@ pub fn run(dir: &Path) -> Result<(), String> {
 
     let mut canvas = window.into_canvas().software().build().map_err(|e| e.to_string())?;
     let mut keys_down = HashMap::<Keycode, ()>::new();
-    let surface = Surface::load_bmp(dir.join("cursor.bmp"))
+    let mouse_surface = Surface::load_bmp(dir.join("cursor.bmp"))
         .map_err(|err| format!("failed to load cursor image: {}", err))?;
     let mut scene_state = SceneState {
         cursor_transform: CursorTransform{
@@ -173,11 +170,8 @@ pub fn run(dir: &Path) -> Result<(), String> {
             mouse_y:0,
         },
         duration_per_frame:START_DURATION_PER_FRAME,
-        cursor:Cursor::from_surface(surface, 0, 0).map_err(
-            |err| format!("failed to load cursor: {}", err))?,
         window_width: canvas.viewport().width(),
         window_height: canvas.viewport().height(),
-        color:Color::RGBA(0,0,0,0),
     };
     let cursor_surface_path = dir.join("mouse.bmp");
     let cursor_surface_name = cursor_surface_path.to_str().unwrap().to_string();
@@ -188,7 +182,9 @@ pub fn run(dir: &Path) -> Result<(), String> {
     let mut images = Images{
         default_cursor:make_texture_surface!(texture_creator, cursor_surface, cursor_surface_name)?,
     };
-    scene_state.cursor.set();
+    let cursor = Cursor::from_surface(mouse_surface, 0, 0).map_err(
+            |err| format!("failed to load cursor: {}", err))?;
+    cursor.set();
     main::run_main_loop_infinitely(&mut main::MainLoopArg{sdl_context:&sdl_context, scene_state:&mut scene_state, canvas:&mut canvas, images:&mut images, keys_down:&mut keys_down, texture_creator:&texture_creator, main_loop:main_loop})
 }
 
