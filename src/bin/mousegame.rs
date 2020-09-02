@@ -1,5 +1,5 @@
 extern crate sdl2;
-extern crate mouse;
+extern crate mousegame;
 mod main;
 use std::time;
 use std::string::String;
@@ -55,7 +55,7 @@ pub struct SceneState{
     cursor: Cursor,
     window_width: u32,
     window_height: u32,
-    color: mouse::Color,
+    color: Color,
 }
 
 impl SceneState {
@@ -177,7 +177,7 @@ pub fn run(dir: &Path) -> Result<(), String> {
             |err| format!("failed to load cursor: {}", err))?,
         window_width: canvas.viewport().width(),
         window_height: canvas.viewport().height(),
-        color:mouse::Color{r:0,g:0,b:0},
+        color:Color::RGBA(0,0,0,0),
     };
     let cursor_surface_path = dir.join("cursor.bmp");
     let cursor_surface_name = cursor_surface_path.to_str().unwrap().to_string();

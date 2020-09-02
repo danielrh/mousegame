@@ -1,7 +1,7 @@
 [package]
 
-name    = "mouse"
-description = "Mouse"
+name    = "mousegame"
+description = "Mouse Game"
 repository = "https://github.com/Rust-SDL2/rust-sdl2"
 documentation = "https://rust-sdl2.github.io/rust-sdl2/sdl2/"
 version = "0.0.1"
@@ -11,7 +11,7 @@ keywords = ["SDL", "windowing", "graphics", "api", "engine"]
 categories = ["rendering","api-bindings","game-engines","multimedia"]
 autobins = false
 [[bin]]
-name="mouse"
+name="mousegame"
 
 [dependencies]
 "sdl2" = {version="0.32.2"}
