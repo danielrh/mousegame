@@ -1,4 +1,5 @@
 use sdl2::keyboard::Keycode;
+use mousegame::Transform;
 use std::collections::HashMap;
 use sdl2::surface::Surface;
 use sdl2::render::Texture;
@@ -17,6 +18,7 @@ pub struct Images<'r> {
 pub struct SceneState{
     pub cursor_x: i32,
     pub cursor_y: i32,
+    hero_location: Transform,
     pub window_width: u32,
     pub window_height: u32,
     pub duration_per_frame: std::time::Duration,
@@ -27,6 +29,7 @@ impl SceneState {
         SceneState{
             cursor_x:0,
             cursor_y:0,
+	    hero_location:Transform::new(32,32),
             duration_per_frame:std::time::Duration::from_millis(1),
             window_width: width,
             window_height: height,
@@ -42,7 +45,7 @@ impl SceneState {
         canvas.copy_ex(
             &images.hero.texture,
             None,
-            Some(Rect::new(self.cursor_x, self.cursor_y,
+            Some(Rect::new(self.hero_location.tx as i32, self.hero_location.ty as i32,
                            images.hero.surface.width(), images.hero.surface.height())),
             0.0,
             Point::new(0,0),//centre
@@ -56,16 +59,17 @@ impl SceneState {
         let _is_shift_held = keys_down.contains_key(&Keycode::LShift) || keys_down.contains_key(&Keycode::RShift);
 	
         if keys_down.contains_key(&Keycode::Left) {
-            self.cursor_x -= 1;
+            self.hero_location.tx -= 1.;
         }
         if keys_down.contains_key(&Keycode::Right) {
-            self.cursor_x += 1;
+            self.hero_location.tx += 1.;
         }
         if keys_down.contains_key(&Keycode::Up) {
-            self.cursor_y -= 1;
+            self.hero_location.ty -= 1.;
         }
         if keys_down.contains_key(&Keycode::Down) {
-            self.cursor_y += 1;
+            self.hero_location.ty += 1.;
+
         }
         if keys_down.contains_key(&Keycode::Escape) {
             std::process::exit(0);
