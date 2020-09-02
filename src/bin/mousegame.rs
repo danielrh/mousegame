@@ -179,7 +179,7 @@ pub fn run(dir: &Path) -> Result<(), String> {
         window_height: canvas.viewport().height(),
         color:Color::RGBA(0,0,0,0),
     };
-    let cursor_surface_path = dir.join("cursor.bmp");
+    let cursor_surface_path = dir.join("mouse.bmp");
     let cursor_surface_name = cursor_surface_path.to_str().unwrap().to_string();
     let cursor_surface = Surface::load_bmp(cursor_surface_path)
         .map_err(|err| format!("failed to load cursor image: {}", err))?;
