@@ -11,12 +11,7 @@ use sdl2::event::Event;
 
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::Cursor;
-use sdl2::pixels::Color;
-use sdl2::rect::{Rect, Point};
 use sdl2::surface::Surface;
-use sdl2::render::Texture;
-
-
 
 static DESIRED_DURATION_PER_FRAME:time::Duration = time::Duration::from_millis(1);
 static START_DURATION_PER_FRAME:time::Duration = time::Duration::from_millis(200);
@@ -118,12 +113,13 @@ fn main() -> Result<(), String> {
 fn main_loop<'a>(sdl_context: &sdl2::Sdl, scene_state: &mut SceneState, canvas: &mut sdl2::render::Canvas<sdl2::video::Window>, images: &mut Images<'a>, keys_down: &mut HashMap<Keycode, ()>, _texture_creator:&'a sdl2::render::TextureCreator<sdl2::video::WindowContext>) -> Result<(), String> {
     let loop_start_time = time::Instant::now();
     let mut events = sdl_context.event_pump()?;
+    let mut process_time = std::time::Duration::default();
     if keys_down.len() != 0 {
         for event in events.poll_iter() {
             process(scene_state, images, event, keys_down)?; // always break
         }
         scene_state.render(canvas, images)?; // mut images only needed for color mod
-        let mut process_time = loop_start_time.elapsed();
+        process_time = loop_start_time.elapsed();
         if keys_down.len() != 0 {
             while process_time < scene_state.duration_per_frame {
                 process_time = loop_start_time.elapsed();
@@ -135,6 +131,7 @@ fn main_loop<'a>(sdl_context: &sdl2::Sdl, scene_state: &mut SceneState, canvas: 
                 if any_events {
 
                     scene_state.render(canvas, images)?;
+                    scene_state.sim()?;
                 }
             }
             if scene_state.duration_per_frame > DELTA_DURATION_PER_FRAME + DESIRED_DURATION_PER_FRAME {
@@ -153,12 +150,13 @@ fn main_loop<'a>(sdl_context: &sdl2::Sdl, scene_state: &mut SceneState, canvas: 
                 break;
             }
         } else {
-            for event in events.wait_iter() {
+            for event in events.wait_timeout_iter((DESIRED_DURATION_PER_FRAME - process_time).as_millis() as u32) {
                 process(scene_state, images, event, keys_down)?;
                 break;
             }
         }
         scene_state.render(canvas, images)?;
+	scene_state.sim()?;
     };
     Ok(())
 }

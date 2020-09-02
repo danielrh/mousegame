@@ -32,10 +32,13 @@ impl SceneState {
             window_height: height,
         }
     }
+    pub fn sim(&mut self) -> Result<(), String> {
+	    Ok(())
+    }
     pub fn render<T:sdl2::render::RenderTarget>(&self, canvas: &mut sdl2::render::Canvas<T>, images: &mut Images) -> Result<(),String> {
-        canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
+        let white = Color::RGBA(255, 255, 255, 255);
+        canvas.set_draw_color(white);
         canvas.clear();
-        canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
         canvas.copy_ex(
             &images.hero.texture,
             None,
@@ -43,13 +46,13 @@ impl SceneState {
                            images.hero.surface.width(), images.hero.surface.height())),
             0.0,
             Point::new(0,0),//centre
-             false,//horiz
-            false,//vert
+            false,// flip horiz
+            false,// flip vert
         ).map_err(|err| format!("{:?}", err))?;
         canvas.present();
         Ok(())
     }
-    pub fn apply_keys(&mut self, keys_down: &HashMap<Keycode, ()>, new_key: Option<Keycode>, repeat:bool) {
+    pub fn apply_keys(&mut self, keys_down: &HashMap<Keycode, ()>, new_key: Option<Keycode>, _repeat:bool) {
         let _is_shift_held = keys_down.contains_key(&Keycode::LShift) || keys_down.contains_key(&Keycode::RShift);
 	
         if keys_down.contains_key(&Keycode::Left) {
@@ -71,14 +74,10 @@ impl SceneState {
             self.click();
         }
         if let Some(Keycode::Return) = new_key {
-            if !repeat {
-                self.click();
-            }
+
         }
         if let Some(Keycode::Space) = new_key {
-            if !repeat {
-                self.click();
-            }
+
         }
     }
     pub fn click(&mut self) {
