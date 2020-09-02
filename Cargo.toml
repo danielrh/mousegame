@@ -1,0 +1,27 @@
+[package]
+
+name    = "mouse"
+description = "Mouse"
+repository = "https://github.com/Rust-SDL2/rust-sdl2"
+documentation = "https://rust-sdl2.github.io/rust-sdl2/sdl2/"
+version = "0.0.1"
+license = "MIT"
+authors = [ "Ander Horn <danielrh@gmail.com>"]
+keywords = ["SDL", "windowing", "graphics", "api", "engine"]
+categories = ["rendering","api-bindings","game-engines","multimedia"]
+
+[[bin]]
+name="mouse"
+
+[dependencies]
+"sdl2" = {version="0.32.2"}
+"serde" = {version="1.0.98"}
+"serde_derive" = {version="1.0.98"}
+"serde-xml-rs" = {version="0.3.1"}
+"regex" = {version="1"}
+
+
+[target.wasm32-unknown-emscripten]
+rustflags = [
+    "-C", "link-arg=-s", "-C", "link-arg=USE_SDL=2",
+]
