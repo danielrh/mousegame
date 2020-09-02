@@ -1,6 +1,8 @@
 extern crate sdl2;
 extern crate mousegame;
 mod main;
+mod game;
+pub use game::{SceneState, Images, TextureSurface};
 use std::time;
 use std::string::String;
 use std::collections::HashMap;
@@ -14,13 +16,7 @@ use sdl2::rect::{Rect, Point};
 use sdl2::surface::Surface;
 use sdl2::render::Texture;
 
-const MOUSE_CONSTANT: i32 = 1;
 
-struct TextureSurface<'r> {
-    texture: Texture<'r>,
-    surface: Surface<'r>,
-    name: String,
-}
 
 static DESIRED_DURATION_PER_FRAME:time::Duration = time::Duration::from_millis(1);
 static START_DURATION_PER_FRAME:time::Duration = time::Duration::from_millis(200);
@@ -38,77 +34,6 @@ macro_rules! make_texture_surface {
 }
 
 
-
-pub struct Images<'r> {
-    default_cursor: TextureSurface<'r>,
-}
-
-#[derive(Clone,PartialEq)]
-struct CursorTransform {
-    mouse_x: i32,
-    mouse_y: i32,
-}
-
-pub struct SceneState{
-    cursor_transform: CursorTransform,
-    duration_per_frame: time::Duration, // how long to wait while key is held down
-    window_width: u32,
-    window_height: u32,
-}
-
-impl SceneState {
-    fn render<T:sdl2::render::RenderTarget>(&self, canvas: &mut sdl2::render::Canvas<T>, images: &mut Images) -> Result<(),String> {
-        canvas.set_draw_color(Color::RGBA(255, 255, 255, 255));
-        canvas.clear();
-        canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
-        canvas.copy_ex(
-            &images.default_cursor.texture,
-            None,
-            Some(Rect::new(self.cursor_transform.mouse_x, self.cursor_transform.mouse_y,
-                           images.default_cursor.surface.width(), images.default_cursor.surface.height())),
-            0.0,
-            Point::new(0,0),//centre
-             false,//horiz
-            false,//vert
-        ).map_err(|err| format!("{:?}", err))?;
-        canvas.present();
-        Ok(())
-    }
-    fn apply_keys(&mut self, keys_down: &HashMap<Keycode, ()>, new_key: Option<Keycode>, repeat:bool) {
-        let _is_shift_held = keys_down.contains_key(&Keycode::LShift) || keys_down.contains_key(&Keycode::RShift);
-	
-        if keys_down.contains_key(&Keycode::Left) {
-            self.cursor_transform.mouse_x -= MOUSE_CONSTANT;
-        }
-        if keys_down.contains_key(&Keycode::Right) {
-            self.cursor_transform.mouse_x += MOUSE_CONSTANT;
-        }
-        if keys_down.contains_key(&Keycode::Up) {
-            self.cursor_transform.mouse_y -= MOUSE_CONSTANT;
-        }
-        if keys_down.contains_key(&Keycode::Down) {
-            self.cursor_transform.mouse_y += MOUSE_CONSTANT
-        }
-        if keys_down.contains_key(&Keycode::Escape) {
-            std::process::exit(0);
-        }
-        if keys_down.contains_key(&Keycode::KpEnter) {
-            self.click();
-        }
-        if let Some(Keycode::Return) = new_key {
-            if !repeat {
-                self.click();
-            }
-        }
-        if let Some(Keycode::Space) = new_key {
-            if !repeat {
-                self.click();
-            }
-        }
-    }
-    fn click(&mut self) {
-    }
-}
 
 fn process(state: &mut SceneState, _images: &mut Images, event: sdl2::event::Event, keys_down: &mut HashMap<Keycode, ()>) -> Result<bool,String>{
     let mut key_encountered = false;
@@ -131,13 +56,13 @@ fn process(state: &mut SceneState, _images: &mut Images, event: sdl2::event::Eve
             keys_down.remove(&key_code);
         },
         Event::MouseButtonDown {x, y, ..} => {
-            state.cursor_transform.mouse_x = x;
-            state.cursor_transform.mouse_y = y;
+            state.cursor_x = x;
+            state.cursor_y = y;
             state.click();
         }
         Event::MouseMotion {x, y, ..} => {
-            state.cursor_transform.mouse_x = x;
-            state.cursor_transform.mouse_y = y;
+            state.cursor_x = x;
+            state.cursor_y = y;
         }
         Event::Window{win_event:sdl2::event::WindowEvent::Resized(width,height),..} => {
           state.window_width = width as u32;
@@ -164,23 +89,15 @@ pub fn run(dir: &Path) -> Result<(), String> {
     let mut keys_down = HashMap::<Keycode, ()>::new();
     let mouse_surface = Surface::load_bmp(dir.join("cursor.bmp"))
         .map_err(|err| format!("failed to load cursor image: {}", err))?;
-    let mut scene_state = SceneState {
-        cursor_transform: CursorTransform{
-            mouse_x:0,
-            mouse_y:0,
-        },
-        duration_per_frame:START_DURATION_PER_FRAME,
-        window_width: canvas.viewport().width(),
-        window_height: canvas.viewport().height(),
-    };
-    let cursor_surface_path = dir.join("mouse.bmp");
-    let cursor_surface_name = cursor_surface_path.to_str().unwrap().to_string();
-    let cursor_surface = Surface::load_bmp(cursor_surface_path)
+    let mut scene_state = SceneState::new(canvas.viewport().width(), canvas.viewport().height());
+    let hero_path = dir.join("mouse.bmp");
+    let hero_name = hero_path.to_str().unwrap().to_string();
+    let hero_surface = Surface::load_bmp(hero_path)
         .map_err(|err| format!("failed to load cursor image: {}", err))?;
     let texture_creator = canvas.texture_creator();
     
     let mut images = Images{
-        default_cursor:make_texture_surface!(texture_creator, cursor_surface, cursor_surface_name)?,
+        hero:make_texture_surface!(texture_creator, hero_surface, hero_name)?,
     };
     let cursor = Cursor::from_surface(mouse_surface, 0, 0).map_err(
             |err| format!("failed to load cursor: {}", err))?;
