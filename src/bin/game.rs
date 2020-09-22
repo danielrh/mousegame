@@ -1,5 +1,5 @@
 use sdl2::keyboard::Keycode;
-use mousegame::Transform;
+use art_stamps::Transform;
 use std::collections::HashMap;
 use sdl2::surface::Surface;
 use sdl2::render::Texture;

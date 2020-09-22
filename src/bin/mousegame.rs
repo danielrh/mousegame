@@ -1,5 +1,5 @@
 extern crate sdl2;
-extern crate mousegame;
+extern crate art_stamps;
 mod main;
 mod game;
 pub use game::{SceneState, Images, TextureSurface};

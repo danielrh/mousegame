@@ -14,7 +14,8 @@ autobins = false
 name="mousegame"
 
 [dependencies]
-"sdl2" = {version="0.32.2"}
+"art-stamps" = {version="~0"}
+"sdl2" = {version="~0.34"}
 "serde" = {version="1.0.98"}
 "serde_derive" = {version="1.0.98"}
 "serde-xml-rs" = {version="0.3.1"}
