@@ -2,13 +2,17 @@ extern crate sdl2;
 extern crate art_stamps;
 mod main;
 mod game;
+pub use art_stamps::{SVG, HrefAndClipMask};
 pub use game::{SceneState, Images, TextureSurface};
 use std::time;
 use std::string::String;
 use std::collections::HashMap;
 use std::path::Path;
+use std::io;
+use std::io::{Read,Write};
+use std::fs;
 use sdl2::event::Event;
-
+use sdl2::rect::{Rect,Point};
 use sdl2::keyboard::Keycode;
 use sdl2::mouse::Cursor;
 use sdl2::surface::Surface;
@@ -72,6 +76,14 @@ fn process(state: &mut SceneState, _images: &mut Images, event: sdl2::event::Eve
     Ok(key_encountered)
 }
 
+
+fn read_to_string(filename: &Path) ->  Result<String, io::Error> {
+    let mut f = fs::File::open(filename)?;
+    let mut buffer = String::new();
+    f.read_to_string(&mut buffer)?;
+    Ok(buffer)
+}
+
 pub fn run(dir: &Path) -> Result<(), String> {
     let sdl_context = sdl2::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -84,7 +96,12 @@ pub fn run(dir: &Path) -> Result<(), String> {
     let mut keys_down = HashMap::<Keycode, ()>::new();
     let mouse_surface = Surface::load_bmp(dir.join("cursor.bmp"))
         .map_err(|err| format!("failed to load cursor image: {}", err))?;
-    let mut scene_state = SceneState::new(canvas.viewport().width(), canvas.viewport().height());
+    let svg = if let Ok(file_data) = read_to_string(&dir.join("level.svg")) {
+        SVG::from_str(&file_data).unwrap()
+    } else {
+        SVG::new(1024,768)
+    };
+    let mut scene_state = SceneState::new(canvas.viewport().width(), canvas.viewport().height(), svg);
     let hero_path = dir.join("mouse.bmp");
     let hero_name = hero_path.to_str().unwrap().to_string();
     let hero_surface = Surface::load_bmp(hero_path)
@@ -93,13 +110,40 @@ pub fn run(dir: &Path) -> Result<(), String> {
     
     let mut images = Images{
         hero:make_texture_surface!(texture_creator, hero_surface, hero_name)?,
+	stamps:Vec::new(),
+	inventory_map:HashMap::new(),
     };
+    
+    process_dir(&dir.join("stamps"), &mut |p:&fs::DirEntry| {
+        let stamp_surface = Surface::load_bmp(p.path()).map_err(
+            |err| io::Error::new(io::ErrorKind::Other, format!("{}: {}", p.path().to_str().unwrap_or("??"), err)))?;
+        images.stamps.push(make_texture_surface!(texture_creator, stamp_surface, p.path().to_str().unwrap().to_string()).map_err(
+            |err| io::Error::new(io::ErrorKind::Other, format!("{}: {}", p.path().to_str().unwrap_or("?X?"), err)))?);
+        Ok(())
+    }).map_err(|err| format!("Failed to load stamp {}", err))?;
+    for (index, stamp) in images.stamps.iter().enumerate() {
+        images.inventory_map.insert(HrefAndClipMask{url:stamp.name.clone(), clip:String::new()}, index);
+    }
+
     let cursor = Cursor::from_surface(mouse_surface, 0, 0).map_err(
             |err| format!("failed to load cursor: {}", err))?;
     cursor.set();
     main::run_main_loop_infinitely(&mut main::MainLoopArg{sdl_context:&sdl_context, scene_state:&mut scene_state, canvas:&mut canvas, images:&mut images, keys_down:&mut keys_down, texture_creator:&texture_creator, main_loop:main_loop})
 }
 
+
+fn process_dir<F: FnMut(&fs::DirEntry) -> Result<(), io::Error>>(dir: &Path, cb: &mut F) -> Result<(), io::Error> {
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+        if path.is_dir() {
+            process_dir(&path, cb)?;
+        } else {
+            cb(&entry)?;
+        }
+    }
+    Ok(())
+}
 
 fn main() -> Result<(), String> {
     if let Err(e) = run(Path::new("assets")) {
@@ -160,3 +204,11 @@ fn main_loop<'a>(sdl_context: &sdl2::Sdl, scene_state: &mut SceneState, canvas: 
     };
     Ok(())
 }
+
+#[derive(Clone, Debug)]
+struct InventoryItem {
+    stamp_index: usize,
+    stamp_name: String,
+}
+
+

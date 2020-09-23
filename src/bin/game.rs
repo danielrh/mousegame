@@ -1,5 +1,5 @@
 use sdl2::keyboard::Keycode;
-use art_stamps::Transform;
+use art_stamps::{Transform, SVG, HrefAndClipMask};
 use std::collections::HashMap;
 use sdl2::surface::Surface;
 use sdl2::render::Texture;
@@ -13,6 +13,8 @@ pub struct TextureSurface<'r> {
 }
 pub struct Images<'r> {
     pub hero: TextureSurface<'r>,
+    pub stamps: Vec<TextureSurface<'r>>,
+    pub inventory_map: HashMap<HrefAndClipMask, usize>,
 }
 
 pub struct SceneState{
@@ -22,10 +24,12 @@ pub struct SceneState{
     pub window_width: u32,
     pub window_height: u32,
     pub duration_per_frame: std::time::Duration,
+    pub svg: SVG,
+    camera_transform: Transform,
 }
 
 impl SceneState {
-    pub fn new(width: u32, height:u32) -> Self {
+    pub fn new(width: u32, height:u32, svg: SVG) -> Self {
         SceneState{
             cursor_x:0,
             cursor_y:0,
@@ -33,10 +37,30 @@ impl SceneState {
             duration_per_frame:std::time::Duration::from_millis(1),
             window_width: width,
             window_height: height,
+	    svg:svg,
+	    camera_transform:Transform::new(0,0),
         }
     }
     pub fn sim(&mut self) -> Result<(), String> {
 	    Ok(())
+    }
+    pub fn draw_level<T:sdl2::render::RenderTarget>(&self, canvas: &mut sdl2::render::Canvas<T>, images: &mut Images) -> Result<(),String> {
+	for g in self.svg.stamps.iter() {
+            let texture_index = images.inventory_map.get(&g.rect.href).unwrap();
+            let final_transform = art_stamps::compose(&self.camera_transform, &g.transform);
+            let img = &mut images.stamps[*texture_index];
+            img.texture.set_color_mod(g.rect.fill.r,g.rect.fill.g,g.rect.fill.b);
+            canvas.copy_ex(
+                &img.texture,
+                None,
+                Some(Rect::new(final_transform.tx as i32, final_transform.ty as i32, g.rect.width, g.rect.height)),
+                final_transform.rotate,
+                Point::new(final_transform.midx as i32, final_transform.midy as i32),
+                false,
+                false,
+            ).map_err(|err| format!("{:?}", err))?;
+	}
+	Ok(())
     }
     pub fn render<T:sdl2::render::RenderTarget>(&self, canvas: &mut sdl2::render::Canvas<T>, images: &mut Images) -> Result<(),String> {
         let white = Color::RGBA(255, 255, 255, 255);
