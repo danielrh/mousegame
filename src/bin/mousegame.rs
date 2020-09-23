@@ -94,7 +94,7 @@ pub fn run(dir: &Path) -> Result<(), String> {
 
     let mut canvas = window.into_canvas().software().build().map_err(|e| e.to_string())?;
     let mut keys_down = HashMap::<Keycode, ()>::new();
-    let mouse_surface = Surface::load_bmp(dir.join("cursor.bmp"))
+    let mouse_cursor_surface = Surface::load_bmp(dir.join("cursor.bmp"))
         .map_err(|err| format!("failed to load cursor image: {}", err))?;
     let svg = if let Ok(file_data) = read_to_string(&dir.join("level.svg")) {
         SVG::from_str(&file_data).unwrap()
@@ -102,18 +102,22 @@ pub fn run(dir: &Path) -> Result<(), String> {
         SVG::new(1024,768)
     };
     let mut scene_state = SceneState::new(canvas.viewport().width(), canvas.viewport().height(), svg);
-    let hero_path = dir.join("mouse.bmp");
-    let hero_name = hero_path.to_str().unwrap().to_string();
-    let hero_surface = Surface::load_bmp(hero_path)
+    let cat_path = dir.join("cat.bmp");
+    let cat_name = cat_path.to_str().unwrap().to_string();
+    let cat_surface = Surface::load_bmp(cat_path)
+        .map_err(|err| format!("failed to load cursor image: {}", err))?;
+    let mouse_path = dir.join("mouse.bmp");
+    let mouse_name = mouse_path.to_str().unwrap().to_string();
+    let mouse_surface = Surface::load_bmp(mouse_path)
         .map_err(|err| format!("failed to load cursor image: {}", err))?;
     let texture_creator = canvas.texture_creator();
     
     let mut images = Images{
-        hero:make_texture_surface!(texture_creator, hero_surface, hero_name)?,
 	stamps:Vec::new(),
 	inventory_map:HashMap::new(),
+        mouse:make_texture_surface!(texture_creator, mouse_surface, mouse_name)?,
+        cat:make_texture_surface!(texture_creator, cat_surface, cat_name)?,
     };
-    
     process_dir(&dir.join("stamps"), &mut |p:&fs::DirEntry| {
         let stamp_surface = Surface::load_bmp(p.path()).map_err(
             |err| io::Error::new(io::ErrorKind::Other, format!("{}: {}", p.path().to_str().unwrap_or("??"), err)))?;
@@ -125,7 +129,7 @@ pub fn run(dir: &Path) -> Result<(), String> {
         images.inventory_map.insert(HrefAndClipMask{url:stamp.name.clone(), clip:String::new()}, index);
     }
 
-    let cursor = Cursor::from_surface(mouse_surface, 0, 0).map_err(
+    let cursor = Cursor::from_surface(mouse_cursor_surface, 0, 0).map_err(
             |err| format!("failed to load cursor: {}", err))?;
     cursor.set();
     main::run_main_loop_infinitely(&mut main::MainLoopArg{sdl_context:&sdl_context, scene_state:&mut scene_state, canvas:&mut canvas, images:&mut images, keys_down:&mut keys_down, texture_creator:&texture_creator, main_loop:main_loop})

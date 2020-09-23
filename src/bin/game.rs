@@ -12,15 +12,22 @@ pub struct TextureSurface<'r> {
     pub name: String,
 }
 pub struct Images<'r> {
-    pub hero: TextureSurface<'r>,
     pub stamps: Vec<TextureSurface<'r>>,
     pub inventory_map: HashMap<HrefAndClipMask, usize>,
+    pub mouse: TextureSurface<'r>,
+    pub cat: TextureSurface<'r>,
 }
-
+#[derive(Clone,Debug)]
+pub struct LocationVel {
+    pub location:Transform,
+    pub vx:f32,
+    pub vy:f32,
+}
 pub struct SceneState{
     pub cursor_x: i32,
     pub cursor_y: i32,
-    hero_location: Transform,
+    mouse_location: Transform,
+    cat_location: Transform,
     pub window_width: u32,
     pub window_height: u32,
     pub duration_per_frame: std::time::Duration,
@@ -33,7 +40,8 @@ impl SceneState {
         SceneState{
             cursor_x:0,
             cursor_y:0,
-	    hero_location:Transform::new(32,32),
+	    mouse_location:Transform::new(32,32),
+	    cat_location:Transform::new(256,64),
             duration_per_frame:std::time::Duration::from_millis(1),
             window_width: width,
             window_height: height,
@@ -67,10 +75,20 @@ impl SceneState {
         canvas.set_draw_color(white);
         canvas.clear();
         canvas.copy_ex(
-            &images.hero.texture,
+            &images.mouse.texture,
             None,
-            Some(Rect::new(self.hero_location.tx as i32, self.hero_location.ty as i32,
-                           images.hero.surface.width(), images.hero.surface.height())),
+            Some(Rect::new(self.mouse_location.tx as i32, self.mouse_location.ty as i32,
+                           images.mouse.surface.width(), images.mouse.surface.height())),
+            0.0,
+            Point::new(0,0),//centre
+            false,// flip horiz
+            false,// flip vert
+        ).map_err(|err| format!("{:?}", err))?;
+        canvas.copy_ex(
+            &images.cat.texture,
+            None,
+            Some(Rect::new(self.cat_location.tx as i32, self.cat_location.ty as i32,
+                           images.cat.surface.width(), images.cat.surface.height())),
             0.0,
             Point::new(0,0),//centre
             false,// flip horiz
@@ -82,17 +100,28 @@ impl SceneState {
     pub fn apply_keys(&mut self, keys_down: &HashMap<Keycode, ()>, new_key: Option<Keycode>, _repeat:bool) {
         let _is_shift_held = keys_down.contains_key(&Keycode::LShift) || keys_down.contains_key(&Keycode::RShift);
 	
+        if keys_down.contains_key(&Keycode::A) {
+            self.cat_location.tx = self.cat_location.tx - 1.;
+        }
+        if keys_down.contains_key(&Keycode::D) {
+            self.cat_location.tx = self.cat_location.tx +2.;
+        }
+        if keys_down.contains_key(&Keycode::W) {
+
+        }
+        if keys_down.contains_key(&Keycode::S) {
+
+        }
         if keys_down.contains_key(&Keycode::Left) {
-            self.hero_location.tx -= 1.;
+            self.mouse_location.tx -= 1.;
         }
         if keys_down.contains_key(&Keycode::Right) {
-            self.hero_location.tx += 1.;
+            self.mouse_location.tx += 1.;
         }
         if keys_down.contains_key(&Keycode::Up) {
-            self.hero_location.ty -= 1.;
+	
         }
         if keys_down.contains_key(&Keycode::Down) {
-            self.hero_location.ty += 1.;
 
         }
         if keys_down.contains_key(&Keycode::Escape) {
