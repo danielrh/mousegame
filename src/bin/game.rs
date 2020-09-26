@@ -33,6 +33,7 @@ pub struct SceneState{
     pub duration_per_frame: std::time::Duration,
     pub svg: SVG,
     camera_transform: Transform,
+    cache: HashMap<String,Vec<art_stamps::F64Point>>,
 }
 
 impl SceneState {
@@ -41,15 +42,17 @@ impl SceneState {
             cursor_x:0,
             cursor_y:0,
 	    mouse_location:Transform::new(32,32),
-	    cat_location:Transform::new(256,64),
+	    cat_location:Transform::new(64,64),
             duration_per_frame:std::time::Duration::from_millis(1),
             window_width: width,
             window_height: height,
 	    svg:svg,
-	    camera_transform:Transform::new(0,0),
+	        camera_transform:Transform::new(0,0),
+            cache:HashMap::<String, Vec<art_stamps::F64Point>>::new(),
         }
     }
     pub fn sim(&mut self) -> Result<(), String> {
+        self.do_collisions().unwrap();
 	    Ok(())
     }
     pub fn draw_level<T:sdl2::render::RenderTarget>(&self, canvas: &mut sdl2::render::Canvas<T>, images: &mut Images) -> Result<(),String> {
@@ -69,6 +72,55 @@ impl SceneState {
             ).map_err(|err| format!("{:?}", err))?;
 	}
 	Ok(())
+    }
+    pub fn do_collisions(&mut self) -> Result<(), String> {
+        if let Some(collision) = self.svg.intersect(
+            (self.cat_location.tx + self.cat_location.midx,self.cat_location.ty + self.cat_location.midy * 2.0),
+            (self.cat_location.tx + self.cat_location.midx * 2.0,self.cat_location.ty),
+            &mut self.cache,
+        ).map_err(|err| format!("{:?}", err))? {
+            if collision.0 > 0.000001 || collision.0 < -0.000001 || collision.1 > 0.000001 || collision.1 < -0.000001 {
+                eprintln!("CAT COLLIDE {:?}", collision);
+            }
+                self.cat_location.tx += collision.0;
+            self.cat_location.ty += collision.1;
+        }
+        if let Some(collision) = self.svg.intersect(
+            (self.cat_location.tx + self.cat_location.midx,self.cat_location.ty + self.cat_location.midy * 2.0),
+            (self.cat_location.tx,self.cat_location.ty),
+            &mut self.cache,
+        ).map_err(|err| format!("{:?}", err))? {
+            if collision.0 > 0.000001 || collision.0 < -0.000001 || collision.1 > 0.000001 || collision.1 < -0.000001 {
+                eprintln!("CAT COLLIDE {:?}", collision);
+            }
+                self.cat_location.tx += collision.0;
+            self.cat_location.ty += collision.1;
+        }
+        if let Some(collision) = self.svg.intersect(
+            (self.mouse_location.tx + self.mouse_location.midx,self.mouse_location.ty + self.mouse_location.midy * 2.0),
+            (self.mouse_location.tx + self.mouse_location.midx * 2.0,self.mouse_location.ty),
+            &mut self.cache,
+        ).map_err(|err| format!("{:?}", err))? {
+            self.mouse_location.tx += collision.0;
+            self.mouse_location.ty += collision.1;
+            if collision.0 > 0.000001 || collision.0 < -0.000001 || collision.1 > 0.000001 || collision.1 < -0.000001 {
+                eprintln!("MOUSE COLLIDE {:?}", collision);
+            }
+
+        }
+        if let Some(collision) = self.svg.intersect(
+            (self.mouse_location.tx + self.mouse_location.midx,self.mouse_location.ty + self.mouse_location.midy * 2.0),
+            (self.mouse_location.tx,self.mouse_location.ty),
+            &mut self.cache,
+        ).map_err(|err| format!("{:?}", err))? {
+            self.mouse_location.tx += collision.0;
+            self.mouse_location.ty += collision.1;
+            if collision.0 > 0.000001 || collision.0 < -0.000001 || collision.1 > 0.000001 || collision.1 < -0.000001 {
+                eprintln!("MOUSE COLLIDE {:?}", collision);
+            }
+
+        }
+        Ok(())
     }
     pub fn render<T:sdl2::render::RenderTarget>(&self, canvas: &mut sdl2::render::Canvas<T>, images: &mut Images) -> Result<(),String> {
         let white = Color::RGBA(255, 255, 255, 255);
@@ -102,27 +154,38 @@ impl SceneState {
 	
         if keys_down.contains_key(&Keycode::A) {
             self.cat_location.tx = self.cat_location.tx - 1.;
+            self.do_collisions();
         }
         if keys_down.contains_key(&Keycode::D) {
             self.cat_location.tx = self.cat_location.tx +2.;
+            self.do_collisions();
         }
         if keys_down.contains_key(&Keycode::W) {
+            self.cat_location.ty = self.cat_location.ty -2.;
+            self.do_collisions();
 
         }
         if keys_down.contains_key(&Keycode::S) {
+            self.cat_location.ty = self.cat_location.ty +2.;
+            self.do_collisions();
 
         }
         if keys_down.contains_key(&Keycode::Left) {
             self.mouse_location.tx -= 1.;
+            self.do_collisions();
         }
         if keys_down.contains_key(&Keycode::Right) {
             self.mouse_location.tx += 1.;
+            self.do_collisions();
         }
         if keys_down.contains_key(&Keycode::Up) {
+            self.mouse_location.ty -= 1.;
+            self.do_collisions();
 	
         }
         if keys_down.contains_key(&Keycode::Down) {
-
+            self.mouse_location.ty += 1.;
+            self.do_collisions();
         }
         if keys_down.contains_key(&Keycode::Escape) {
             std::process::exit(0);
